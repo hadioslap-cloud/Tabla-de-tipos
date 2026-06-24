@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokémon Tipo Checker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --red: #CC0000;
+    --red-dark: #990000;
+    --yellow: #FFCB05;
+    --blue: #003A70;
+    --bg: #F0F4FF;
+    --white: #FFFFFF;
+    --gray: #8892A4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .header .pokeball-icon {
+    width: 54px;
+    height: 54px;
+    margin: 0 auto 10px;
+    display: block;
+  }
+  .header h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--blue);
+    line-height: 1.7;
+    letter-spacing: 1px;
+  }
+  .header h1 span {
+    color: var(--red);
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--gray);
+    margin-top: 6px;
+    font-weight: 600;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--white);
+    border-radius: 24px;
+    box-shadow: 0 8px 32px rgba(0,58,112,0.12), 0 2px 8px rgba(0,0,0,0.06);
+    padding: 32px 28px;
+    width: 100%;
+    max-width: 480px;
+  }
+
+  /* SCREEN SELECTOR */
+  #screen-select, #screen-result {
+    display: none;
+  }
+  #screen-select.active, #screen-result.active {
+    display: block;
+    animation: fadeIn 0.35s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* TYPE SELECTOR */
+  .slot-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .slot-optional {
+    color: var(--gray);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 11px;
+  }
+  .type-slot {
+    margin-bottom: 22px;
+  }
+
+  .type-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .type-btn {
+    border: none;
+    border-radius: 10px;
+    padding: 7px 4px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    opacity: 0.88;
+    letter-spacing: 0.2px;
+  }
+  .type-btn:hover { transform: scale(1.07); opacity: 1; }
+  .type-btn.selected {
+    outline: 3px solid var(--yellow);
+    outline-offset: 2px;
+    opacity: 1;
+    transform: scale(1.07);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  .type-btn.disabled-type {
+    opacity: 0.3;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Colores oficiales */
+  .t-normal   { background: #9FA19F; }
+  .t-fuego    { background: #E62829; }
+  .t-agua     { background: #2980EF; }
+  .t-planta   { background: #3FA129; }
+  .t-electro  { background: #FAC000; color: #333; text-shadow: none; }
+  .t-hielo    { background: #3DCEF3; }
+  .t-lucha    { background: #FF8000; }
+  .t-veneno   { background: #9141CB; }
+  .t-tierra   { background: #915121; }
+  .t-volador  { background: #81B9EF; }
+  .t-psiquico { background: #EF4179; }
+  .t-bicho    { background: #91A119; }
+  .t-roca     { background: #AFA981; color: #333; text-shadow: none; }
+  .t-fantasma { background: #704170; }
+  .t-dragón   { background: #5060E1; }
+  .t-siniestro{ background: #624D4E; }
+  .t-acero    { background: #60A1B8; }
+  .t-hada     { background: #EF70EF; }
+
+  /* DIVIDER */
+  .divider {
+    border: none;
+    border-top: 1.5px solid #E8EDF5;
+    margin: 24px 0;
+  }
+
+  /* PREVIEW BADGES */
+  .preview-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    min-height: 36px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .preview-label {
+    font-size: 12px;
+    color: var(--gray);
+    font-weight: 700;
+  }
+  .badge {
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  }
+  .badge-empty {
+    background: #E8EDF5;
+    color: #8892A4;
+    text-shadow: none;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  /* BTN ADELANTE */
+  .btn-go {
+    width: 100%;
+    margin-top: 24px;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--red) 0%, #FF2020 100%);
+    color: var(--yellow);
+    border: none;
+    border-radius: 14px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: transform 0.12s, box-shadow 0.12s;
+    box-shadow: 0 4px 16px rgba(204,0,0,0.35);
+  }
+  .btn-go:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(204,0,0,0.4);
+  }
+  .btn-go:disabled {
+    background: #C8CDD8;
+    color: #8892A4;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  /* RESULT SCREEN */
+  .result-types-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .result-type-badge {
+    border-radius: 12px;
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    letter-spacing: 0.5px;
+  }
+
+  .section-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    display: inline-block;
+  }
+  .section-x4    { color: #CC0000; background: #FFF0F0; }
+  .section-x2    { color: #E07000; background: #FFF5E8; }
+  .section-half  { color: #2070CC; background: #EEF5FF; }
+  .section-quarter { color: #0080A0; background: #E8F8FF; }
+  .section-immune{ color: #404040; background: #F0F0F0; }
+
+  .type-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 18px;
+  }
+  .type-chip {
+    border-radius: 9px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .type-chip .mult {
+    font-size: 10px;
+    font-weight: 800;
+    background: rgba(0,0,0,0.2);
+    border-radius: 5px;
+    padding: 1px 5px;
+  }
+  .empty-section {
+    font-size: 12px;
+    color: #B0BAC8;
+    font-style: italic;
+    margin-bottom: 18px;
+    padding-left: 4px;
+  }
+
+  .btn-back {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    background: transparent;
+    color: var(--blue);
+    border: 2px solid #C8D4E8;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    letter-spacing: 0.5px;
+  }
+  .btn-back:hover {
+    background: #EEF2FF;
+    border-color: var(--blue);
+  }
+
+  .footer {
+    margin-top: 16px;
+    font-size: 11px;
+    color: #A0AABB;
+    text-align: center;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <!-- Pokéball SVG inline -->
+  <svg class="pokeball-icon" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="27" cy="27" r="26" fill="#fff" stroke="#222" stroke-width="2"/>
+    <path d="M1 27 Q1 1 27 1 Q53 1 53 27Z" fill="#CC0000"/>
+    <path d="M1 27 Q1 53 27 53 Q53 53 53 27Z" fill="#fff"/>
+    <rect x="1" y="25" width="52" height="4" fill="#222" rx="2"/>
+    <circle cx="27" cy="27" r="8" fill="#fff" stroke="#222" stroke-width="2.5"/>
+    <circle cx="27" cy="27" r="4" fill="#fff" stroke="#222" stroke-width="2"/>
+  </svg>
+  <h1>TIPO<span>DEX</span></h1>
+  <p>Calculadora de debilidades Pokémon</p>
+</div>
+
+<div class="card">
+
+  <!-- SCREEN: Selección de tipos -->
+  <div id="screen-select" class="active">
+    <div class="type-slot">
+      <div class="slot-label">Tipo 1</div>
+      <div class="type-grid" id="grid-tipo1"></div>
+    </div>
+    <hr class="divider">
+    <div class="type-slot">
+      <div class="slot-label">Tipo 2 <span class="slot-optional">(opcional)</span></div>
+      <div class="type-grid" id="grid-tipo2"></div>
+    </div>
+    <hr class="divider">
+    <div class="preview-row">
+      <span class="preview-label">Seleccionado:</span>
+      <span id="preview-t1" class="badge badge-empty">—</span>
+      <span id="preview-t2" class="badge badge-empty" style="display:none"></span>
+    </div>
+    <button class="btn-go" id="btn-adelante" disabled>CALCULAR ▶</button>
+  </div>
+
+  <!-- SCREEN: Resultados -->
+  <div id="screen-result">
+    <div class="result-types-row" id="result-types-row"></div>
+
+    <div class="section-title section-x4">×4 SUPER EFECTIVO</div>
+    <div class="type-chips" id="chips-x4"></div>
+
+    <div class="section-title section-x2">×2 EFECTIVO</div>
+    <div class="type-chips" id="chips-x2"></div>
+
+    <div class="section-title section-half">×½ RESISTENCIA</div>
+    <div class="type-chips" id="chips-half"></div>
+
+    <div class="section-title section-quarter">×¼ DOBLE RESISTENCIA</div>
+    <div class="type-chips" id="chips-quarter"></div>
+
+    <div class="section-title section-immune">INMUNE</div>
+    <div class="type-chips" id="chips-immune"></div>
+
+    <button class="btn-back" id="btn-volver">← Volver</button>
+  </div>
+
+</div>
+
+<div class="footer">Generación 6+ · Incluye tipo Hada</div>
+
+<script>
+const TIPOS = [
+  { nombre: "Normal",   clase: "t-normal"   },
+  { nombre: "Fuego",    clase: "t-fuego"    },
+  { nombre: "Agua",     clase: "t-agua"     },
+  { nombre: "Planta",   clase: "t-planta"   },
+  { nombre: "Electro",  clase: "t-electro"  },
+  { nombre: "Hielo",    clase: "t-hielo"    },
+  { nombre: "Lucha",    clase: "t-lucha"    },
+  { nombre: "Veneno",   clase: "t-veneno"   },
+  { nombre: "Tierra",   clase: "t-tierra"   },
+  { nombre: "Volador",  clase: "t-volador"  },
+  { nombre: "Psíquico", clase: "t-psiquico" },
+  { nombre: "Bicho",    clase: "t-bicho"    },
+  { nombre: "Roca",     clase: "t-roca"     },
+  { nombre: "Fantasma", clase: "t-fantasma" },
+  { nombre: "Dragón",   clase: "t-dragón"   },
+  { nombre: "Siniestro",clase: "t-siniestro"},
+  { nombre: "Acero",    clase: "t-acero"    },
+  { nombre: "Hada",     clase: "t-hada"     },
+];
+
+// Tabla de efectividad: attackType -> { defendingType -> multiplier }
+// 0 = inmune, 0.5 = resistencia, 2 = débil
+const TABLA = {
+  "Normal":    { "Roca":0.5, "Acero":0.5, "Fantasma":0 },
+  "Fuego":     { "Fuego":0.5,"Agua":0.5,"Roca":0.5,"Dragón":0.5, "Planta":2,"Hielo":2,"Bicho":2,"Acero":2 },
+  "Agua":      { "Fuego":2,"Tierra":2,"Roca":2, "Agua":0.5,"Planta":0.5,"Dragón":0.5 },
+  "Planta":    { "Agua":2,"Tierra":2,"Roca":2, "Fuego":0.5,"Planta":0.5,"Veneno":0.5,"Volador":0.5,"Bicho":0.5,"Dragón":0.5,"Acero":0.5 },
+  "Electro":   { "Agua":2,"Volador":2, "Planta":0.5,"Electro":0.5,"Dragón":0.5,"Tierra":0 },
+  "Hielo":     { "Planta":2,"Tierra":2,"Volador":2,"Dragón":2, "Fuego":0.5,"Agua":0.5,"Hielo":0.5,"Acero":0.5 },
+  "Lucha":     { "Normal":2,"Hielo":2,"Roca":2,"Siniestro":2,"Acero":2, "Veneno":0.5,"Bicho":0.5,"Psíquico":0.5,"Volador":0.5,"Hada":0.5,"Fantasma":0 },
+  "Veneno":    { "Planta":2,"Hada":2, "Veneno":0.5,"Tierra":0.5,"Roca":0.5,"Fantasma":0.5,"Acero":0 },
+  "Tierra":    { "Fuego":2,"Electro":2,"Veneno":2,"Roca":2,"Acero":2, "Planta":0.5,"Bicho":0.5,"Volador":0 },
+  "Volador":   { "Planta":2,"Lucha":2,"Bicho":2, "Roca":0.5,"Acero":0.5,"Electro":0.5 },
+  "Psíquico":  { "Lucha":2,"Veneno":2, "Psíquico":0.5,"Acero":0.5,"Siniestro":0,"Fantasma":0 }, // nota: en gen1 fantasma no afecta psíquico pero eso ya es historia
+  "Bicho":     { "Planta":2,"Psíquico":2,"Siniestro":2, "Fuego":0.5,"Lucha":0.5,"Volador":0.5,"Fantasma":0.5,"Acero":0.5,"Hada":0.5 },
+  "Roca":      { "Fuego":2,"Hielo":2,"Volador":2,"Bicho":2, "Lucha":0.5,"Tierra":0.5,"Acero":0.5 },
+  "Fantasma":  { "Psíquico":2,"Fantasma":2, "Siniestro":0.5,"Normal":0 },
+  "Dragón":    { "Dragón":2, "Acero":0.5,"Hada":0 },
+  "Siniestro": { "Psíquico":2,"Fantasma":2, "Lucha":0.5,"Siniestro":0.5,"Hada":0.5 },
+  "Acero":     { "Hielo":2,"Roca":2,"Hada":2, "Fuego":0.5,"Agua":0.5,"Electro":0.5,"Acero":0.5 },
+  "Hada":      { "Lucha":2,"Dragón":2,"Siniestro":2, "Fuego":0.5,"Veneno":0.5,"Acero":0.5 },
+};
+
+// Calcular defensa: dado tipo(s) del pokémon, qué mult recibe de cada tipo atacante
+function calcDefensa(tipo1, tipo2) {
+  const resultado = {};
+  for (const atk of TIPOS) {
+    const a = atk.nombre;
+    let m1 = TABLA[a][tipo1] ?? 1;
+    let m2 = tipo2 ? (TABLA[a][tipo2] ?? 1) : 1;
+    resultado[a] = m1 * m2;
+  }
+  return resultado;
+}
+
+// Estado
+let sel1 = null, sel2 = null;
+
+// Función para obtener clase de color por nombre de tipo
+function claseDeNombre(nombre) {
+  return TIPOS.find(t => t.nombre === nombre)?.clase || '';
+}
+
+// Crear grids
+function crearGrid(gridId, slot) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  for (const t of TIPOS) {
+    const btn = document.createElement('button');
+    btn.className = `type-btn ${t.clase}`;
+    btn.textContent = t.nombre;
+    btn.dataset.tipo = t.nombre;
+    btn.addEventListener('click', () => seleccionar(slot, t.nombre, btn));
+    grid.appendChild(btn);
+  }
+}
+
+function seleccionar(slot, nombre, btn) {
+  if (slot === 1) {
+    // Deselect if same
+    if (sel1 === nombre) {
+      sel1 = null;
+      btn.classList.remove('selected');
+    } else {
+      sel1 = nombre;
+      document.querySelectorAll('#grid-tipo1 .type-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
+    // Si sel2 == sel1, limpiar sel2
+    if (sel1 && sel2 === sel1) { sel2 = null; }
+  } else {
+    if (sel2 === nombre) {
+      sel2 = null;
+      btn.classList.remove('selected');
+    } else {
+      sel2 = nombre;
+      document.querySelectorAll('#grid-tipo2 .type-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    }
+    if (sel2 && sel2 === sel1) { sel2 = null; document.querySelectorAll('#grid-tipo2 .type-btn').forEach(b => b.classList.remove('selected')); }
+  }
+  actualizarDisabled();
+  actualizarPreview();
+  document.getElementById('btn-adelante').disabled = !sel1;
+}
+
+function actualizarDisabled() {
+  // En grid2, deshabilitar el tipo ya seleccionado en slot 1
+  document.querySelectorAll('#grid-tipo2 .type-btn').forEach(b => {
+    if (sel1 && b.dataset.tipo === sel1) {
+      b.classList.add('disabled-type');
+    } else {
+      b.classList.remove('disabled-type');
+    }
+  });
+}
+
+function actualizarPreview() {
+  const p1 = document.getElementById('preview-t1');
+  const p2 = document.getElementById('preview-t2');
+  if (sel1) {
+    p1.textContent = sel1;
+    p1.className = `badge ${claseDeNombre(sel1)}`;
+  } else {
+    p1.textContent = '—';
+    p1.className = 'badge badge-empty';
+  }
+  if (sel2) {
+    p2.textContent = sel2;
+    p2.className = `badge ${claseDeNombre(sel2)}`;
+    p2.style.display = '';
+  } else {
+    p2.style.display = 'none';
+  }
+}
+
+function mostrarResultado() {
+  if (!sel1) return;
+  const defensa = calcDefensa(sel1, sel2);
+
+  // Tipos row
+  const row = document.getElementById('result-types-row');
+  row.innerHTML = '';
+  [sel1, sel2].filter(Boolean).forEach(t => {
+    const badge = document.createElement('span');
+    badge.className = `result-type-badge ${claseDeNombre(t)}`;
+    badge.textContent = t;
+    row.appendChild(badge);
+  });
+
+  const grupos = { 4:[], 2:[], 0.5:[], 0.25:[], 0:[] };
+  for (const [atk, mult] of Object.entries(defensa)) {
+    if (mult === 4)    grupos[4].push(atk);
+    else if (mult === 2)   grupos[2].push(atk);
+    else if (mult === 0.5) grupos[0.5].push(atk);
+    else if (mult === 0.25)grupos[0.25].push(atk);
+    else if (mult === 0)   grupos[0].push(atk);
+    // mult===1 → neutro, no se muestra
+  }
+
+  function llenar(id, lista, multLabel) {
+    const cont = document.getElementById(id);
+    cont.innerHTML = '';
+    if (lista.length === 0) {
+      cont.innerHTML = '<div class="empty-section">Ninguno</div>';
+      return;
+    }
+    for (const t of lista) {
+      const chip = document.createElement('div');
+      chip.className = `type-chip ${claseDeNombre(t)}`;
+      chip.innerHTML = `${t}<span class="mult">${multLabel}</span>`;
+      cont.appendChild(chip);
+    }
+  }
+
+  llenar('chips-x4', grupos[4], '×4');
+  llenar('chips-x2', grupos[2], '×2');
+  llenar('chips-half', grupos[0.5], '×½');
+  llenar('chips-quarter', grupos[0.25], '×¼');
+  llenar('chips-immune', grupos[0], '×0');
+
+  document.getElementById('screen-select').classList.remove('active');
+  document.getElementById('screen-result').classList.add('active');
+}
+
+function volverASeleccion() {
+  document.getElementById('screen-result').classList.remove('active');
+  document.getElementById('screen-select').classList.add('active');
+}
+
+// Init
+crearGrid('grid-tipo1', 1);
+crearGrid('grid-tipo2', 2);
+
+document.getElementById('btn-adelante').addEventListener('click', mostrarResultado);
+document.getElementById('btn-volver').addEventListener('click', volverASeleccion);
+</script>
+</body>
+</html>
